@@ -8,7 +8,6 @@ import Navbar from '../../components/Navbar';
 import { BookOpen, Clock, Users, Star, Filter, Search, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { courseAPI, type Course } from '@/lib/api';
-import { MOCK_COURSES } from '@/data/mockCourses';
 
 enum Category {
 	Programming = "PROGRAMMING",
@@ -35,8 +34,8 @@ export default function Courses() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const [courses, setCourses] = useState<Course[]>(MOCK_COURSES);
-  const [filteredCourses, setFilteredCourses] = useState<Course[]>(MOCK_COURSES);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
@@ -54,20 +53,14 @@ export default function Courses() {
           setCourses(response.data);
           setFilteredCourses(response.data);
         } else {
-          // Use mock data as fallback
-          console.log('Using mock data for courses - no API data available');
-          toast('Showing sample courses. Connect to see live courses.', {
+          toast('No courses available at the moment.', {
             icon: '📚',
             duration: 3000
           });
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
-        // Keep mock data as fallback on error
-        toast('Showing sample courses. Unable to fetch live courses.', {
-          icon: '📚',
-          duration: 3000
-        });
+        toast.error('Failed to fetch courses. Please try again later.');
       } finally {
         setLoading(false);
       }
