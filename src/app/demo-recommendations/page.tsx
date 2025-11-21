@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Search, Star, TrendingUp, Zap, DollarSign } from 'lucide-react';
-import { getRecommendations, type RecommendationResponse as RecResponse } from '@/services/recommendationService'
+import { getRecommendations, type RecommendationResponse as RecResponse, type Recommendation } from '../../services/recommendationService'
 
 const UI_CHIPS = [
   'certification', 'affordable', 'beginner', 'intermediate', 'advanced',
@@ -163,7 +163,7 @@ export default function DemoRecommendations() {
                 <div>
                   <Label className="text-sm font-medium">Keywords</Label>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {recommendations.intent.keywords.map((keyword) => (
+                    {recommendations.intent.keywords.map((keyword: string) => (
                       <Badge key={keyword} variant="secondary" className="text-xs">
                         {keyword}
                       </Badge>
@@ -199,7 +199,7 @@ export default function DemoRecommendations() {
             </div>
 
             <div className="grid gap-4">
-              {recommendations.recommendations.map((rec) => (
+              {recommendations.recommendations.map((rec: Recommendation) => (
                 <Card key={rec.course.id} className="relative">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
@@ -237,7 +237,7 @@ export default function DemoRecommendations() {
                     <div>
                       <Label className="text-sm font-medium">Features</Label>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {rec.course.features.map((feature, idx) => (
+                        {rec.course.features.map((feature: string, idx: number) => (
                           <Badge key={idx} variant="outline" className="text-xs">
                             {feature}
                           </Badge>

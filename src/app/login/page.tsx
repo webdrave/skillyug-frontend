@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import Navbar from '@/components/Navbar';
 
 /**
  * Production-ready login form with proper email validation
@@ -165,24 +166,23 @@ function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
+    <Card className="w-full max-w-md bg-black/30 backdrop-blur-md border border-blue-800/30 shadow-2xl">
       <CardHeader className="text-center space-y-4">
-        <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-          {/* Replace with your logo */}
-          <div className="w-8 h-8 bg-blue-600 rounded"></div>
+        <div className="mx-auto w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
+          <LogIn className="h-10 w-10 text-white" />
         </div>
         <div>
-          <CardTitle className="text-2xl font-bold text-gray-900">Welcome back</CardTitle>
-          <CardDescription className="text-gray-600">
-            Sign in to your account to continue
+          <CardTitle className="text-3xl font-bold text-white">Welcome Back</CardTitle>
+          <CardDescription className="text-gray-300 text-base">
+            Sign in to your Skillyug account
           </CardDescription>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 pt-6">
         {error && (
-          <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <div className="flex items-center gap-2 p-4 text-sm text-red-100 bg-red-500/20 border border-red-500/50 rounded-lg backdrop-blur-sm">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-400" />
             <span>{error}</span>
           </div>
         )}
@@ -194,7 +194,7 @@ function LoginForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-gray-700">
+                  <FormLabel className="text-sm font-medium text-gray-200">
                     Email address
                   </FormLabel>
                   <FormControl>
@@ -204,10 +204,10 @@ function LoginForm() {
                       placeholder="name@example.com"
                       autoComplete="email"
                       disabled={isLoading}
-                      className="h-11"
+                      className="h-12 bg-white/10 border-blue-700/50 text-white placeholder:text-gray-400 focus:border-orange-500 focus:ring-orange-500/20"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
@@ -218,12 +218,12 @@ function LoginForm() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center justify-between">
-                    <FormLabel className="text-sm font-medium text-gray-700">
+                    <FormLabel className="text-sm font-medium text-gray-200">
                       Password
                     </FormLabel>
                     <Link 
                       href="/forgot-password" 
-                      className="text-sm text-blue-600 hover:text-blue-500 hover:underline"
+                      className="text-sm text-orange-400 hover:text-orange-300 hover:underline transition-colors"
                       tabIndex={isLoading ? -1 : 0}
                     >
                       Forgot password?
@@ -236,22 +236,22 @@ function LoginForm() {
                       placeholder="Enter your password"
                       autoComplete="current-password"
                       disabled={isLoading}
-                      className="h-11"
+                      className="h-12 bg-white/10 border-blue-700/50 text-white placeholder:text-gray-400 focus:border-orange-500 focus:ring-orange-500/20"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-400" />
                 </FormItem>
               )}
             />
 
             <Button 
               type="submit" 
-              className="w-full h-11 text-base font-medium" 
+              className="w-full h-12 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white transition-all duration-300 transform hover:scale-105 mt-6" 
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Signing in...
                 </>
               ) : (
@@ -261,12 +261,12 @@ function LoginForm() {
           </form>
         </Form>
 
-        <div className="relative my-6">
+        <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-gray-300" />
+            <span className="w-full border-t border-blue-700/50" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">
+            <span className="bg-black/30 px-3 text-gray-400 backdrop-blur-sm">
               Or continue with
             </span>
           </div>
@@ -274,7 +274,7 @@ function LoginForm() {
         
         <Button 
           variant="outline" 
-          className="w-full h-11"
+          className="w-full h-12 bg-white/5 border-blue-700/50 text-gray-200 hover:bg-white/10 hover:border-blue-600 transition-all duration-300"
           disabled={isLoading}
           onClick={() => signIn('google')}
         >
@@ -299,11 +299,11 @@ function LoginForm() {
           Sign in with Google
         </Button>
         
-        <div className="text-center text-sm text-gray-600">
+        <div className="text-center text-base text-gray-300 pt-4">
           Don&apos;t have an account?{' '}
           <Link 
             href="/sign-up" 
-            className="font-medium text-blue-600 hover:text-blue-500 hover:underline"
+            className="font-semibold text-orange-400 hover:text-orange-300 hover:underline transition-colors"
           >
             Create one here
           </Link>
@@ -315,17 +315,20 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Suspense 
-        fallback={
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Loading...</span>
-          </div>
-        }
-      >
-        <LoginForm />
-      </Suspense>
+    <div className="min-h-screen bg-gradient-to-br from-black via-blue-900 to-blue-800">
+      <Navbar />
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <Suspense 
+          fallback={
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+              <span className="ml-3 text-white text-lg">Loading...</span>
+            </div>
+          }
+        >
+          <LoginForm />
+        </Suspense>
+      </div>
     </div>
   );
 }

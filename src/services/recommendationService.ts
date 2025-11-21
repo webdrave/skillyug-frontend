@@ -1,30 +1,36 @@
+export interface Course {
+  id: string;
+  title: string;
+  level: string;
+  price: number;
+  currency: string;
+  features: string[];
+  refund_policy?: string;
+  tokens?: number;
+  bootcamps?: string;
+  certificate?: boolean;
+  description?: string;
+}
+
+export interface Recommendation {
+  course: Course;
+  confidence_score: number;
+  reasoning: string;
+  match_type: 'exact' | 'similar' | 'fallback';
+}
+
+export interface Intent {
+  intent: string;
+  keywords: string[];
+  level?: string;
+  price_range?: { min?: number; max?: number };
+  features?: string[];
+}
+
 export interface RecommendationResponse {
   query: string;
-  intent: {
-    intent: string;
-    keywords: string[];
-    level?: string;
-    price_range?: { min?: number; max?: number };
-    features?: string[];
-  };
-  recommendations: {
-    course: {
-      id: string;
-      title: string;
-      level: string;
-      price: number;
-      currency: string;
-      features: string[];
-      refund_policy?: string;
-      tokens?: number;
-      bootcamps?: string;
-      certificate?: boolean;
-      description?: string;
-    };
-    confidence_score: number;
-    reasoning: string;
-    match_type: 'exact' | 'similar' | 'fallback';
-  }[];
+  intent: Intent;
+  recommendations: Recommendation[];
   message: string;
   total_results: number;
 }

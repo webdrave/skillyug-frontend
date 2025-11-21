@@ -10,7 +10,8 @@ import {
   Star,
   Activity,
   PlusCircle,
-  BarChart3
+  BarChart3,
+  Mail
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCourses, useUsers } from '@/hooks/useAdminApi';
@@ -162,6 +163,14 @@ export default function AdminDashboard() {
           <p className="text-white/80 mt-1">Welcome back! Here&apos;s what&apos;s happening with your platform.</p>
         </div>
         <div className="flex gap-3">
+          <Link 
+            href="/admin/invitations"
+            className="inline-flex items-center px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+            style={{background: '#EB8216'}}
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Invite Mentor
+          </Link>
           <Link 
             href="/admin/courses/new"
             className="inline-flex items-center px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
@@ -316,6 +325,18 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm font-medium text-white">Manage Users</p>
                 <p className="text-xs text-white/70">View user accounts and activity</p>
+              </div>
+            </Link>
+            
+            <Link 
+              href="/admin/invitations"
+              className="flex items-center p-3 rounded-lg transition-colors group hover:opacity-80"
+              style={{background: '#EB8216'}}
+            >
+              <Mail className="w-5 h-5 text-white mr-3" />
+              <div>
+                <p className="text-sm font-medium text-white">Invite Mentors</p>
+                <p className="text-xs text-white/70">Send invitations to new mentors</p>
               </div>
             </Link>
             
