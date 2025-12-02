@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from "axios";
 import { getSession } from "next-auth/react";
 
-// Types for API responses
+// Types for API responses matching backend format
 export interface ErrorResponse {
 	message?: string;
 	code?: string;
@@ -9,11 +9,22 @@ export interface ErrorResponse {
 }
 
 interface ApiResponse<T = unknown> {
-	success: boolean;
+	status: 'success' | 'error' | 'fail';
 	data?: T;
 	message?: string;
 	error?: string;
+	errors?: Record<string, unknown> | string[] | Array<Record<string, unknown>>;
 	code?: string;
+	meta?: {
+		timestamp: string;
+		requestId?: string;
+		pagination?: {
+			page: number;
+			limit: number;
+			total: number;
+			totalPages: number;
+		};
+	};
 }
 
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
@@ -56,6 +67,13 @@ interface SessionUser {
 	[key: string]: unknown;
 }
 
+// Session type from next-auth
+interface AuthSession {
+	user?: SessionUser;
+	expires?: string;
+	[key: string]: unknown;
+}
+
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -74,14 +92,23 @@ const createApiInstance = (): AxiosInstance => {
 	instance.interceptors.request.use(
 		async (config) => {
 			try {
-				const session = await getSession();
+				// Try to get session with timeout, but don't fail the request if it times out
+				const sessionPromise = getSession();
+				const timeoutPromise = new Promise<null>((resolve) => 
+					setTimeout(() => resolve(null), 1000)
+				);
+				
+				const session = await Promise.race([sessionPromise, timeoutPromise]).catch((err) => {
+					console.warn('getSession error:', err);
+					return null;
+				}) as AuthSession | null;
 				
 				if (session?.user) {
 					// Add session info to headers
 					config.headers["X-User-ID"] = session.user.id;
 					config.headers["X-User-Type"] = session.user.userType;
 					
-					const accessToken = (session.user as SessionUser).accessToken;
+					const accessToken = session.user.accessToken;
 					if (accessToken) {
 						config.headers.Authorization = `Bearer ${accessToken}`;
 					} 
@@ -230,10 +257,23 @@ export const apiHelpers = {
 		params?: Record<string, string | number | boolean>
 	): Promise<T> => {
 		try {
+			console.log(`[API] GET ${endpoint}`, params ? { params } : '');
 			const response = await api.get<T>(endpoint, { params });
+			console.log(`[API] GET ${endpoint} - SUCCESS`, { 
+				status: response.status,
+				dataKeys: response.data ? Object.keys(response.data as object) : [] 
+			});
 			return response.data;
 		} catch (error) {
-			console.error(`GET ${endpoint} failed:`, error);
+			console.error(`[API] GET ${endpoint} - FAILED:`, error);
+			console.error('Error details:', {
+				message: error instanceof Error ? error.message : 'Unknown error',
+				name: error instanceof Error ? error.name : 'Unknown',
+				stack: error instanceof Error ? error.stack : undefined,
+				response: (error as any)?.response,
+				request: (error as any)?.request,
+				code: (error as any)?.code
+			});
 			throw error;
 		}
 	},
@@ -471,6 +511,17 @@ export const purchaseAPI = {
 		paymentId?: string;
 	}): Promise<ApiResponse<Purchase>> => {
 		return apiHelpers.post(API_ENDPOINTS.PURCHASES, purchaseData);
+	},
+
+	enrollFree: async (courseId: string): Promise<ApiResponse> => {
+		return apiHelpers.post(`${API_ENDPOINTS.PURCHASES}/enroll-free`, { courseId });
+	},
+};
+
+// Enrollment API Functions
+export const enrollmentAPI = {
+	getMyEnrollments: async (): Promise<ApiResponse> => {
+		return apiHelpers.get('/enrollments/my-enrollments');
 	},
 };
 

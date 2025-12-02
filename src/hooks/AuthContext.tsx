@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     id: (user as User).id,
     full_name: user.name,
     email: user.email,
-    user_type: (user as User).userType || 'student',
+    user_type: (user as User).userType || 'STUDENT',
     email_verified: true
   } : null
 

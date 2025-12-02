@@ -32,7 +32,7 @@ const DashboardSelector = () => {
   }
   
   if (profile?.user_type === "student") return <StudentDashboard />;
-  if (profile?.user_type === "instructor" || profile?.user_type === "teacher" || profile?.user_type === "mentor") return <MentorsDashboard />;
+  if (profile?.user_type === "MENTOR" || profile?.user_type === "mentor") return <MentorsDashboard />;
   
   // Default fallback for students
   return <StudentDashboard />;

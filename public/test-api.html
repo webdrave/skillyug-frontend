@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Testing Courses API</h1>
+    <button onclick="testAPI()">Test API</button>
+    <pre id="result"></pre>
+    
+    <script>
+        async function testAPI() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Testing...';
+            
+            try {
+                console.log('Making request to: http://localhost:5000/api/courses');
+                
+                const response = await axios.get('http://localhost:5000/api/courses', {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    withCredentials: true
+                });
+                
+                console.log('Response:', response);
+                
+                resultEl.textContent = JSON.stringify({
+                    success: true,
+                    status: response.status,
+                    statusText: response.statusText,
+                    dataKeys: Object.keys(response.data),
+                    dataStatus: response.data.status,
+                    dataLength: response.data.data?.length,
+                    fullData: response.data
+                }, null, 2);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultEl.textContent = JSON.stringify({
+                    success: false,
+                    message: error.message,
+                    code: error.code,
+                    hasResponse: !!error.response,
+                    hasRequest: !!error.request,
+                    responseStatus: error.response?.status,
+                    responseData: error.response?.data
+                }, null, 2);
+            }
+        }
+    </script>
+</body>
+</html>

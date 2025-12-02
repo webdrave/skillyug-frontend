@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/AuthContext';
 import Navbar from '../../components/Navbar';
 import { BookOpen, Clock, Users, Star, Filter, Search, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { courseAPI, type Course } from '@/lib/api';
+import { courseAPI, purchaseAPI, type Course } from '@/lib/api';
 
 enum Category {
 	Programming = "PROGRAMMING",
@@ -46,20 +46,49 @@ export default function Courses() {
       try {
         setLoading(true);
         const response = await courseAPI.getAll();
-        console.log('API Response:', response);
+        console.log('=== COURSES API DEBUG ===');
+        console.log('Full Response:', response);
+        console.log('Response type:', typeof response);
+        console.log('Response keys:', response ? Object.keys(response) : 'null');
+        console.log('Response.status:', response?.status);
+        console.log('Response.data type:', response?.data ? typeof response.data : 'undefined');
+        console.log('Response.data:', response?.data);
+        console.log('Is response.data an array?', Array.isArray(response?.data));
+        console.log('Response.data length:', response?.data?.length);
         
-        if (response.success && response.data && response.data.length > 0) {
-          console.log('Using API data for courses');
+        // Backend returns { status: 'success', data: [...], meta: {...} }
+        // apiHelpers.get returns response.data, which IS this object
+        if (response?.status === 'success' && Array.isArray(response?.data) && response.data.length > 0) {
+          console.log('✅ Setting courses with', response.data.length, 'items');
           setCourses(response.data);
           setFilteredCourses(response.data);
+        } else if (response?.status === 'success' && Array.isArray(response?.data)) {
+          console.log('⚠️ Response successful but no courses found');
+          toast('No courses available at the moment.', {
+            icon: '📚',
+            duration: 3000
+          });
         } else {
+          console.log('❌ Unexpected response structure');
+          console.log('Condition check:', {
+            hasResponse: !!response,
+            status: response?.status,
+            hasData: !!response?.data,
+            isArray: Array.isArray(response?.data),
+            length: response?.data?.length
+          });
           toast('No courses available at the moment.', {
             icon: '📚',
             duration: 3000
           });
         }
       } catch (error) {
-        console.error('Error fetching courses:', error);
+        console.error('❌ Error fetching courses:', error);
+        console.error('Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          name: error instanceof Error ? error.name : 'Unknown',
+          stack: error instanceof Error ? error.stack : 'No stack'
+        });
         toast.error('Failed to fetch courses. Please try again later.');
       } finally {
         setLoading(false);
@@ -94,17 +123,38 @@ export default function Courses() {
     setFilteredCourses(filtered);
   }, [courses, searchTerm, selectedCategory, selectedDifficulty]);
 
-  const handleEnrollClick = (course: Course) => {
-    if (!user) {
-      toast.error('Please login to enroll in courses');
-      router.push('/login?redirect=' + encodeURIComponent(`/payment?courseId=${course.id}&amount=${course.price}`));
-      return;
-    }
+	const handleEnrollClick = async (course: Course) => {
+		if (!user) {
+			toast.error('Please login to enroll in courses');
+			router.push('/login?redirect=' + encodeURIComponent(`/courses`));
+			return;
+		}
 
-    router.push(`/payment?courseId=${course.id}&amount=${course.price}`);
-  };
+		// Check if course is free (price = 0)
+		// Convert to number to handle Decimal type from database
+		const coursePrice = Number(course.price);
+		
+		if (coursePrice === 0) {
+			try {
+				toast.loading('Enrolling in free course...', { id: 'enroll' });
+				const response = await purchaseAPI.enrollFree(course.id);
+				
+				if (response.status === 'success') {
+					toast.success('Successfully enrolled! Redirecting to dashboard...', { id: 'enroll' });
+					setTimeout(() => router.push('/dashboard'), 1500);
+				} else {
+					toast.error(response.message || 'Failed to enroll', { id: 'enroll' });
+				}
+			} catch (error) {
+				console.error('Free enrollment failed:', error);
+				toast.error('Failed to enroll. Please try again.', { id: 'enroll' });
+			}
+			return;
+		}
 
-  return (
+		// Redirect to payment page for paid courses
+		router.push(`/payment?courseId=${course.id}&amount=${course.price}`);
+	};  return (
 		<div className="min-h-screen bg-gradient-to-br from-black via-blue-900 to-blue-800">
 			<Navbar />
 			<div className="py-14 px-4 sm:px-6 lg:px-8">
@@ -248,7 +298,7 @@ export default function Courses() {
 														onMouseEnter={(e) => (e.currentTarget.style.background = "#d67214")}
 														onMouseLeave={(e) => (e.currentTarget.style.background = "#EB8216")}
 													>
-														Enroll Now
+														{Number(course.price) === 0 ? 'Enroll Free' : 'Enroll Now'}
 													</button>
 												</div>
 											</div>

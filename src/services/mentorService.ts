@@ -251,4 +251,75 @@ export const mentorService = {
       throw error;
     }
   },
+
+  /**
+   * Admin: Decommission mentor (change to STUDENT)
+   */
+  decommissionMentor: async (userId: string, authToken: string) => {
+    try {
+      const response = await axios.patch(
+        `${API_BASE_URL}/mentor/admin/mentors/${userId}/decommission`,
+        {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Decommission mentor error:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Failed to decommission mentor');
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Admin: Delete mentor permanently
+   */
+  deleteMentor: async (userId: string, authToken: string, reassignToUserId?: string) => {
+    try {
+      const response = await axios.delete(
+        `${API_BASE_URL}/mentor/admin/mentors/${userId}`,
+        {
+          data: reassignToUserId ? { reassignToUserId } : {},
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Delete mentor error:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Failed to delete mentor');
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Get mentor's assigned courses
+   */
+  getMyCourses: async (authToken: string) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/mentor/my-courses`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get my courses error:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Failed to get courses');
+      }
+      throw error;
+    }
+  },
 };

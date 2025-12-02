@@ -228,6 +228,7 @@ export interface UpdateCourseInput {
   isActive?: boolean;
   isFeatured?: boolean;
   learningPathId?: string;
+  mentorId?: string;
 }
 
 export interface CourseAnalytics {

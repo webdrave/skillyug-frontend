@@ -12,16 +12,15 @@ const Navbar = () => {
   const pathname = usePathname();
   const { user, profile, signOut } = useAuth();
 
-  // Determine dashboard route based on role
-  let dashboardRoute = null;
-  if (profile?.user_type === 'student') dashboardRoute = '/dashboard';
-  else if (profile?.user_type === 'instructor' || profile?.user_type === 'teacher') dashboardRoute = '/dashboard';
-  else if (profile?.user_type === 'admin') dashboardRoute = '/dashboard';
+  // Determine profile route based on role - all route to dashboard
+  let profileRoute = null;
+  if (user) {
+    profileRoute = '/dashboard';
+  }
 
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Courses', path: '/courses' },
-    { name: 'Student Dashboard', path: '/dashboard' }, // Test link
     { name: 'AboutUs', path: '/about-us' },
     { name: 'Join Our Team', path: '/join-our-team' },
     { name: 'ContactUs', path: '/contactus' },
@@ -56,12 +55,15 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            {user && dashboardRoute && (
+            {user && profileRoute && (
               <Link
-                href={dashboardRoute}
-                className="ml-4 px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors duration-200"
+                href={profileRoute}
+                className={`flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${pathname === profileRoute
+                  ? 'text-orange-500 bg-blue-900/50'
+                  : 'text-gray-300 hover:text-white hover:bg-blue-800/50'
+                  }`}
               >
-                Dashboard
+                Profile
               </Link>
             )}
             {!user ? (
@@ -117,23 +119,16 @@ const Navbar = () => {
                   {link.name}
                 </Link>
               ))}
-              <Link
-                href={"/demo-course"}
-                onClick={() => setIsOpen(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${pathname === "/demo-course"
-                  ? 'text-orange-500 bg-blue-900/50'
-                  : 'text-gray-300 hover:text-white hover:bg-blue-800/50'
-                }`}
-              >
-                Demo Course
-              </Link>
-              {user && dashboardRoute && (
+              {user && profileRoute && (
                 <Link
-                  href={dashboardRoute}
+                  href={profileRoute}
                   onClick={() => setIsOpen(false)}
-                  className="block px-3 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors duration-200"
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${pathname === profileRoute
+                    ? 'text-orange-500 bg-blue-900/50'
+                    : 'text-gray-300 hover:text-white hover:bg-blue-800/50'
+                  }`}
                 >
-                  Dashboard
+                  Profile
                 </Link>
               )}
               {!user ? (

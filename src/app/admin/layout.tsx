@@ -15,7 +15,9 @@ import {
   X,
   LogOut,
   Home,
-  Mail
+  Mail,
+  UserPlus,
+  UserCog
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
@@ -39,6 +41,16 @@ const sidebarItems = [
     icon: Users,
     label: 'Users',
     href: '/admin/users'
+  },
+  {
+    icon: UserCog,
+    label: 'Manage Mentors',
+    href: '/admin/mentors'
+  },
+  {
+    icon: UserPlus,
+    label: 'Assign Mentor',
+    href: '/admin/assign-mentor'
   },
   {
     icon: Mail,

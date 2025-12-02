@@ -329,6 +329,30 @@ export default function AdminDashboard() {
             </Link>
             
             <Link 
+              href="/admin/mentors"
+              className="flex items-center p-3 rounded-lg transition-colors group hover:opacity-80"
+              style={{background: '#EB8216'}}
+            >
+              <Users className="w-5 h-5 text-white mr-3" />
+              <div>
+                <p className="text-sm font-medium text-white">Manage Mentors</p>
+                <p className="text-xs text-white/70">Decommission or delete mentors</p>
+              </div>
+            </Link>
+            
+            <Link 
+              href="/admin/assign-mentor"
+              className="flex items-center p-3 rounded-lg transition-colors group hover:opacity-80"
+              style={{background: '#EB8216'}}
+            >
+              <Users className="w-5 h-5 text-white mr-3" />
+              <div>
+                <p className="text-sm font-medium text-white">Assign Mentor</p>
+                <p className="text-xs text-white/70">Assign mentors to courses</p>
+              </div>
+            </Link>
+            
+            <Link 
               href="/admin/invitations"
               className="flex items-center p-3 rounded-lg transition-colors group hover:opacity-80"
               style={{background: '#EB8216'}}

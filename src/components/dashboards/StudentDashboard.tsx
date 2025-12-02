@@ -2,8 +2,12 @@
 
 import React, { useState } from 'react';
 import { useAuth } from "../../hooks/AuthContext";
-import { LogOut, Book, Gamepad, MessageSquare, TrendingUp, Clock, Target, Flame, Star } from 'lucide-react';
+import { LogOut, Book, Gamepad, MessageSquare, TrendingUp, Clock, Target, Flame, Star, Video } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { ActiveStreamsList } from '../streaming/ActiveStreamsList';
+import { EnrolledSessions } from '../sessions/EnrolledSessions';
+import { EnrolledCourses } from '../courses/EnrolledCourses';
 
 
 // ## Sidebar Component Definition ##
@@ -28,6 +32,10 @@ const Sidebar = () => {
       <nav className="flex flex-col space-y-3 flex-grow">
         <button className="w-full text-left p-3 bg-orange-500 rounded-lg font-semibold text-white">Profile</button>
         <button className="w-full text-left p-3 hover:bg-blue-800 rounded-lg text-white">Your Course</button>
+        <Link href="/student/sessions" className="w-full text-left p-3 hover:bg-blue-800 rounded-lg text-white flex items-center gap-2">
+          <Video className="h-4 w-4" />
+          Live Sessions
+        </Link>
         <button className="w-full text-left p-3 hover:bg-blue-800 rounded-lg text-white">All Course</button>
         <button className="w-full text-left p-3 hover:bg-blue-800 rounded-lg text-white">Quiz/Games</button>
         <button className="w-full text-left p-3 hover:bg-blue-800 rounded-lg text-white">Contact us</button>
@@ -145,11 +153,40 @@ const MainContent = () => {
                 </div>
               </div>
             </div>
+
+            {/* Enrolled Courses Section */}
+            <div className="mb-8">
+              <EnrolledCourses limit={6} showTitle={true} />
+            </div>
+
+            {/* Upcoming Sessions Section */}
+            <div className="mb-8">
+              <EnrolledSessions limit={6} showTitle={true} />
+            </div>
+
+            {/* Live Streaming Section */}
+            <div className="mb-8">
+              <ActiveStreamsList />
+            </div>
           </>
         ) : (
           <>
+            {/* Live Streaming Section for all users */}
+            <div className="mb-8">
+              <ActiveStreamsList />
+            </div>
+
             {/* Quick Actions for real users */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Link href="/student/sessions" className="bg-black/30 backdrop-blur-md border border-blue-800/30 rounded-xl p-6 hover:bg-black/40 transition-all duration-300">
+                <Video className="h-12 w-12 text-orange-500 mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">Live Sessions</h3>
+                <p className="text-gray-300 mb-4">Join live classes and interact with mentors</p>
+                <span className="text-orange-500 hover:text-orange-400 font-medium">
+                  View Sessions →
+                </span>
+              </Link>
+
               <div className="bg-black/30 backdrop-blur-md border border-blue-800/30 rounded-xl p-6 hover:bg-black/40 transition-all duration-300">
                 <Book className="h-12 w-12 text-orange-500 mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">My Courses</h3>
