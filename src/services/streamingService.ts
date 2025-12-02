@@ -83,6 +83,61 @@ export interface ActiveStreamsResponse {
   total: number;
 }
 
+export interface StreamStatusResponse {
+  success: boolean;
+  isLive: boolean;
+  data?: {
+    state: string;
+    health?: string;
+    viewerCount: number;
+    startTime?: string;
+  } | null;
+  message?: string;
+}
+
+export interface LiveClass {
+  sessionId: string;
+  title: string;
+  description?: string;
+  courseId?: string;
+  courseName?: string;
+  courseImage?: string;
+  mentorName: string;
+  mentorAvatar?: string;
+  playbackUrl: string;
+  startedAt: string;
+  viewerCount: number;
+  streamHealth?: string;
+  enableChat: boolean;
+  enableQuiz: boolean;
+}
+
+export interface LiveClassesResponse {
+  success: boolean;
+  count: number;
+  classes: LiveClass[];
+}
+
+export interface ActiveClassSessionResponse {
+  success: boolean;
+  isLive: boolean;
+  message?: string;
+  data?: {
+    sessionId: string;
+    title: string;
+    description?: string;
+    courseId?: string;
+    courseName?: string;
+    mentorName?: string;
+    playbackUrl: string;
+    startedAt: string;
+    streamHealth?: string;
+    viewerCount: number;
+    enableChat: boolean;
+    enableQuiz: boolean;
+  };
+}
+
 /**
  * Streaming Service - API calls for AWS IVS live streaming
  */
@@ -219,6 +274,66 @@ class StreamingService {
   }
 
   /**
+   * Check stream health/status by session ID
+   * Called: Periodically by frontend to update UI (viewer count, health, etc.)
+   */
+  async getStreamStatus(sessionId: string): Promise<StreamStatusResponse> {
+    try {
+      const api = await createAuthAxios();
+      const response = await api.get<StreamStatusResponse>(`/streaming/status/${sessionId}`);
+      return response.data;
+    } catch (error) {
+      this.handleError(error, 'Failed to fetch stream status');
+      throw error;
+    }
+  }
+
+  /**
+   * Check stream status by channel ARN (for direct access)
+   */
+  async getStreamStatusByChannel(channelArn: string): Promise<StreamStatusResponse> {
+    try {
+      const api = await createAuthAxios();
+      const encodedArn = encodeURIComponent(channelArn);
+      const response = await api.get<StreamStatusResponse>(`/streaming/channel-status/${encodedArn}`);
+      return response.data;
+    } catch (error) {
+      this.handleError(error, 'Failed to fetch stream status by channel');
+      throw error;
+    }
+  }
+
+  /**
+   * Get all currently live classes/sessions
+   * Called: Student dashboard showing all available live classes
+   */
+  async getLiveClasses(): Promise<LiveClassesResponse> {
+    try {
+      const api = await createAuthAxios();
+      const response = await api.get<LiveClassesResponse>('/streaming/live-classes');
+      return response.data;
+    } catch (error) {
+      this.handleError(error, 'Failed to fetch live classes');
+      throw error;
+    }
+  }
+
+  /**
+   * Get active session for a specific course/class
+   * Called: When student opens a class page to check if it's live
+   */
+  async getActiveClassSession(courseId: string): Promise<ActiveClassSessionResponse> {
+    try {
+      const api = await createAuthAxios();
+      const response = await api.get<ActiveClassSessionResponse>(`/streaming/active-class/${courseId}`);
+      return response.data;
+    } catch (error) {
+      this.handleError(error, 'Failed to fetch active class session');
+      throw error;
+    }
+  }
+
+  /**
    * Handle API errors
    */
   private handleError(error: unknown, defaultMessage: string): void {
@@ -235,3 +350,13 @@ class StreamingService {
 }
 
 export const streamingService = new StreamingService();
+
+// Re-export the new mentor channel service for easy access
+export { mentorChannelService } from './mentorChannelService';
+export type { 
+  MentorChannelCredentials, 
+  ClassSession, 
+  ActiveClassStatus, 
+  LiveClass as MentorChannelLiveClass,
+  StreamStatus 
+} from './mentorChannelService';

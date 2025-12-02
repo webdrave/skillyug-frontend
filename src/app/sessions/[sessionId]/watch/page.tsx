@@ -1,11 +1,13 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Video, Calendar, Clock, Users, AlertCircle, ArrowLeft, Maximize } from 'lucide-react';
+import { Video, Calendar, Clock, Users, AlertCircle, ArrowLeft, Maximize, Volume2, VolumeX, Play } from 'lucide-react';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
+
+import { sessionService } from '@/services/sessionService';
 
 interface SessionData {
   id: string;
@@ -36,10 +38,22 @@ interface SessionData {
     status: string;
     isActive: boolean;
   };
+  ivsChannel?: {
+    id: string;
+    playbackUrl: string;
+    isActive: boolean;
+  };
   _count?: {
     attendance: number;
   };
 }
+
+// Helper function to get playback URL from either source
+const getPlaybackUrl = (session: SessionData | null): string | null => {
+  if (!session) return null;
+  // Check ivsChannel first (new channel pool architecture), then liveStream (old system)
+  return session.ivsChannel?.playbackUrl || session.liveStream?.playbackUrl || null;
+};
 
 export default function SessionWatchPage() {
   const params = useParams();
@@ -49,7 +63,14 @@ export default function SessionWatchPage() {
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1); // 0 to 1
+  const [playerError, setPlayerError] = useState<string | null>(null);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const playerRef = useRef<any>(null);
 
   useEffect(() => {
     if (sessionId) {
@@ -60,28 +81,17 @@ export default function SessionWatchPage() {
   const fetchSession = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/sessions/${sessionId}/view`,
-        {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 403) {
-          throw new Error('You do not have access to this session');
-        }
-        throw new Error('Failed to fetch session');
-      }
-
-      const result = await response.json();
-      setSession(result.data);
+      const data = await sessionService.getSessionForViewing(sessionId);
+      // Map the response to SessionData interface if needed, or rely on compatibility
+      setSession(data as unknown as SessionData);
     } catch (err: any) {
       console.error('Error fetching session:', err);
-      setError(err.message || 'Failed to load session');
+      // Handle 403 specifically if axios error structure allows, otherwise generic error
+      if (err.response?.status === 403) {
+        setError('You do not have access to this session');
+      } else {
+        setError(err.message || 'Failed to load session');
+      }
     } finally {
       setLoading(false);
     }
@@ -120,14 +130,160 @@ export default function SessionWatchPage() {
     }
   };
 
+  // Get playback URL from either source
+  const playbackUrl = getPlaybackUrl(session);
+
+  // Initialize IVS Player when session is loaded and has playback URL
+  useEffect(() => {
+    if (session?.status === 'LIVE' && playbackUrl) {
+      loadIVSPlayer();
+    }
+
+    return () => {
+      // Cleanup player on unmount
+      if (playerRef.current) {
+        try {
+          playerRef.current.pause();
+          playerRef.current.delete();
+        } catch (err) {
+          console.error('Error cleaning up player:', err);
+        }
+      }
+    };
+  }, [playbackUrl, session?.status]);
+
+  const loadIVSPlayer = () => {
+    if (typeof window === 'undefined' || !videoRef.current) return;
+
+    // Check if IVS player script is already loaded
+    if ((window as any).IVSPlayer) {
+      initializePlayer();
+      return;
+    }
+
+    // Load IVS player script dynamically
+    const script = document.createElement('script');
+    script.src = 'https://player.live-video.net/1.27.0/amazon-ivs-player.min.js';
+    script.async = true;
+    script.onload = () => initializePlayer();
+    script.onerror = () => setPlayerError('Failed to load video player');
+    document.body.appendChild(script);
+  };
+
+  const initializePlayer = () => {
+    const url = getPlaybackUrl(session);
+    if (!videoRef.current || !url) return;
+
+    const { IVSPlayer } = window as any;
+    
+    if (!IVSPlayer.isPlayerSupported) {
+      setPlayerError('Your browser does not support the video player');
+      return;
+    }
+
+    try {
+      const player = IVSPlayer.create();
+      playerRef.current = player;
+      
+      player.attachHTMLVideoElement(videoRef.current);
+      player.load(url);
+      
+      // Try to autoplay
+      try {
+        const playPromise = player.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch((err: any) => {
+            console.log('Autoplay prevented, user interaction required:', err);
+          });
+        }
+      } catch (err) {
+        console.log('Error calling play():', err);
+      }
+      
+      // Event listeners
+      player.addEventListener(IVSPlayer.PlayerState.PLAYING, () => {
+        console.log('Player State: PLAYING');
+        setIsPlaying(true);
+        setLoading(false);
+        // Sync volume state with player
+        if (player) {
+           player.setVolume(volume);
+           player.setMuted(isMuted);
+        }
+      });
+
+      player.addEventListener(IVSPlayer.PlayerState.IDLE, () => {
+        setIsPlaying(false);
+      });
+
+      player.addEventListener(IVSPlayer.PlayerState.READY, () => {
+        console.log('IVS Player ready');
+      });
+
+      player.addEventListener(IVSPlayer.PlayerEventType.ERROR, (err: any) => {
+        console.error('Player error:', err);
+        setPlayerError('Stream error. The stream may have ended or is not available.');
+        setIsPlaying(false);
+      });
+
+    } catch (err: any) {
+      console.error('Failed to initialize player:', err);
+      setPlayerError(`Failed to initialize video player: ${err.message || JSON.stringify(err)}`);
+    }
+  };
+
+  const handlePlayClick = () => {
+    if (playerRef.current) {
+      playerRef.current.play();
+    } else if (videoRef.current) {
+      videoRef.current.play();
+    }
+  };
+
+  const toggleMute = () => {
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    console.log('Toggling mute. New state:', newMutedState);
+    
+    if (playerRef.current) {
+      playerRef.current.setMuted(newMutedState);
+    } else if (videoRef.current) {
+      videoRef.current.muted = newMutedState;
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    console.log('Volume changed:', newVolume);
+    
+    // If volume is > 0, unmute
+    if (newVolume > 0 && isMuted) {
+      setIsMuted(false);
+      if (playerRef.current) playerRef.current.setMuted(false);
+      else if (videoRef.current) videoRef.current.muted = false;
+    }
+    
+    // If volume is 0, mute
+    if (newVolume === 0 && !isMuted) {
+      setIsMuted(true);
+      if (playerRef.current) playerRef.current.setMuted(true);
+      else if (videoRef.current) videoRef.current.muted = true;
+    }
+
+    if (playerRef.current) {
+      playerRef.current.setVolume(newVolume);
+    } else if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+    }
+  };
+
   const toggleFullscreen = () => {
     const videoContainer = document.getElementById('video-container');
     if (!document.fullscreenElement && videoContainer) {
       videoContainer.requestFullscreen();
-      setIsFullscreen(true);
     } else if (document.exitFullscreen) {
       document.exitFullscreen();
-      setIsFullscreen(false);
     }
   };
 
@@ -193,22 +349,76 @@ export default function SessionWatchPage() {
                 className="bg-black rounded-xl overflow-hidden mb-6 relative"
                 style={{ aspectRatio: '16/9' }}
               >
-                {session.status === 'LIVE' && session.liveStream?.playbackUrl ? (
+                {session.status === 'LIVE' && getPlaybackUrl(session) ? (
                   <>
+                    {/* IVS Player Video Element */}
                     <video
+                      ref={videoRef}
                       className="w-full h-full"
-                      controls
+                      playsInline
                       autoPlay
-                      src={session.liveStream.playbackUrl}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
-                    <button
-                      onClick={toggleFullscreen}
-                      className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-lg transition-colors"
-                    >
-                      <Maximize className="h-5 w-5" />
-                    </button>
+                      muted={isMuted}
+                    />
+                    
+                    {/* Player Error Overlay */}
+                    {playerError && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                        <div className="text-center p-6">
+                          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
+                          <p className="text-red-300">{playerError}</p>
+                          <button
+                            onClick={() => {
+                              setPlayerError(null);
+                              loadIVSPlayer();
+                            }}
+                            className="mt-4 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Play button overlay when not playing */}
+                    {!isPlaying && !playerError && (
+                      <button
+                        onClick={handlePlayClick}
+                        className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/50 transition-colors"
+                      >
+                        <div className="bg-orange-500 rounded-full p-4">
+                          <Play className="h-12 w-12 text-white" fill="white" />
+                        </div>
+                      </button>
+                    )}
+                    
+                    {/* Controls */}
+                    <div className="absolute bottom-4 right-4 flex gap-2">
+                      <div className="flex items-center gap-2 bg-black/50 hover:bg-black/70 rounded-lg p-2 transition-colors group">
+                        <button
+                          onClick={toggleMute}
+                          className="text-white focus:outline-none"
+                        >
+                          {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                        </button>
+                        
+                        {/* Volume Slider - visible on hover or always visible */}
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={isMuted ? 0 : volume}
+                          onChange={handleVolumeChange}
+                          className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                        />
+                      </div>
+                      <button
+                        onClick={toggleFullscreen}
+                        className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-lg transition-colors"
+                      >
+                        <Maximize className="h-5 w-5" />
+                      </button>
+                    </div>
                   </>
                 ) : session.status === 'SCHEDULED' ? (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900">

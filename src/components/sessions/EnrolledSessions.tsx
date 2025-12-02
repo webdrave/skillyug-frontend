@@ -33,6 +33,7 @@ interface SessionData {
     status: string;
     isActive: boolean;
   };
+  playbackUrl?: string; // Added root playbackUrl
   _count?: {
     attendance: number;
   };
@@ -241,7 +242,7 @@ export const EnrolledSessions: React.FC<EnrolledSessionsProps> = ({
             {/* Action Button */}
             {session.status === 'LIVE' && (
               <button
-                onClick={() => handleJoinSession(session.id, session.liveStream?.playbackUrl)}
+                onClick={() => handleJoinSession(session.id, session.playbackUrl || session.liveStream?.playbackUrl)}
                 className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
                 <PlayCircle className="h-5 w-5" />

@@ -32,6 +32,7 @@ interface LiveSessionCardProps {
       status: string;
       isActive: boolean;
     };
+    playbackUrl?: string; // Added root playbackUrl
     _count?: {
       attendance: number;
     };
@@ -48,7 +49,8 @@ export const LiveSessionCard: React.FC<LiveSessionCardProps> = ({ session, autoP
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    if (session.status === 'LIVE' && session.liveStream?.playbackUrl) {
+    const url = session.playbackUrl || session.liveStream?.playbackUrl;
+    if (session.status === 'LIVE' && url) {
       loadIVSPlayer();
     }
 
@@ -62,7 +64,7 @@ export const LiveSessionCard: React.FC<LiveSessionCardProps> = ({ session, autoP
         }
       }
     };
-  }, [session.liveStream?.playbackUrl]);
+  }, [session.playbackUrl, session.liveStream?.playbackUrl]);
 
   const loadIVSPlayer = () => {
     if (typeof window === 'undefined' || !videoRef.current) return;
@@ -83,7 +85,8 @@ export const LiveSessionCard: React.FC<LiveSessionCardProps> = ({ session, autoP
   };
 
   const initializePlayer = () => {
-    if (!videoRef.current || !session.liveStream?.playbackUrl) return;
+    const url = session.playbackUrl || session.liveStream?.playbackUrl;
+    if (!videoRef.current || !url) return;
 
     const { IVSPlayer } = window as any;
     
@@ -95,7 +98,7 @@ export const LiveSessionCard: React.FC<LiveSessionCardProps> = ({ session, autoP
     try {
       const player = IVSPlayer.create();
       player.attachHTMLVideoElement(videoRef.current);
-      player.load(session.liveStream.playbackUrl);
+      player.load(url);
       
       if (autoPlay) {
         player.play().catch((err: any) => {
@@ -162,7 +165,8 @@ export const LiveSessionCard: React.FC<LiveSessionCardProps> = ({ session, autoP
     setIsFullscreen(!isFullscreen);
   };
 
-  if (session.status !== 'LIVE' || !session.liveStream) {
+  const url = session.playbackUrl || session.liveStream?.playbackUrl;
+  if (session.status !== 'LIVE' || !url) {
     return null;
   }
 

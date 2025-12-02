@@ -32,6 +32,7 @@ interface SessionData {
     status: string;
     isActive: boolean;
   };
+  playbackUrl?: string; // Added root playbackUrl
   _count?: {
     attendance: number;
   };

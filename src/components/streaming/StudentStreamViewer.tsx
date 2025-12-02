@@ -44,8 +44,32 @@ export function StudentStreamViewer({ streamId, onBack }: StudentStreamViewerPro
 
   const fetchStreamInfo = async () => {
     try {
-      const streamData = await streamingService.getStream(streamId);
-      setStream(streamData);
+      // Use the new API to get stream status/details by session ID
+      const statusResponse = await streamingService.getStreamStatus(streamId);
+      
+      if (statusResponse.success && statusResponse.data) {
+        // Map the response to the local state structure
+        // Note: We might need to adjust the state type if it's strictly LiveStream
+        // For now, we'll map it to a compatible object
+        setStream({
+          id: streamId,
+          title: 'Live Session', // Title might need to be fetched separately if not in status
+          status: statusResponse.data.state === 'LIVE' ? 'LIVE' : 'ENDED',
+          isActive: statusResponse.data.state === 'LIVE',
+          channelArn: '', // Not needed for viewer
+          ingestEndpoint: '', // Not needed for viewer
+          playbackUrl: (statusResponse.data as any).playbackUrl || '', // Ensure playbackUrl is available
+          viewerCount: statusResponse.data.viewerCount,
+          createdAt: statusResponse.data.startTime || new Date().toISOString(),
+          mentorProfile: { id: '', userId: '', user: { email: (statusResponse.data as any).mentorName || 'Mentor' } },
+          course: (statusResponse.data as any).courseName ? {
+            id: (statusResponse.data as any).courseId || '',
+            courseName: (statusResponse.data as any).courseName || '',
+          } : undefined,
+        } as any);
+      } else {
+        setError('Stream is not active');
+      }
       setLoading(false);
     } catch (err) {
       console.error('Failed to fetch stream:', err);
@@ -58,7 +82,10 @@ export function StudentStreamViewer({ streamId, onBack }: StudentStreamViewerPro
     if (!stream) return;
     
     try {
-      await streamingService.joinStream(streamId);
+      // For the new flow, we might just need to track the viewer
+      // The previous joinStream endpoint might still work if updated, or we can skip explicit join
+      // But let's try to use the existing join endpoint if it's compatible or just proceed
+      // Since we are just viewing, we can proceed to load the player
       setJoined(true);
       
       // Initialize IVS player
@@ -74,7 +101,7 @@ export function StudentStreamViewer({ streamId, onBack }: StudentStreamViewerPro
 
   const leaveStream = async () => {
     try {
-      await streamingService.leaveStream(streamId);
+      // Just update local state
       setJoined(false);
       if (playerRef.current) {
         playerRef.current.delete();

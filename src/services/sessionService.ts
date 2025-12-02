@@ -49,14 +49,20 @@ export interface Session {
 }
 
 export interface StartSessionResponse {
-  session: Session;
-  credentials: {
-    streamKey?: string;
-    ingestEndpoint?: string;
-    playbackUrl?: string;
-    participantToken?: string;
-    stageArn?: string;
-  };
+  ingestEndpoint: string;
+  streamKey: string;
+  playbackUrl: string;
+  channelId: string;
+}
+
+export interface StreamingCredentials {
+  ingestServer: string;
+  streamKey: string;
+  playbackUrl: string;
+  channelId: string;
+  sessionId: string;
+  status: string;
+  message: string;
 }
 
 const getAuthHeaders = async () => {
@@ -88,7 +94,9 @@ class SessionService {
     const response = await axios.get(`${API_URL}/sessions/mentor/my-sessions?${params}`, {
       headers: await getAuthHeaders(),
     });
-    return response.data.data;
+    // Backend returns { success, data: { sessions, total, page, totalPages } }
+    const data = response.data.data;
+    return Array.isArray(data) ? data : (data?.sessions || []);
   }
 
   async getUpcomingSessions(courseId?: string): Promise<Session[]> {
@@ -104,18 +112,26 @@ class SessionService {
     return response.data.data;
   }
 
+  /**
+   * Start a session - This is the ONLY place where mentor gets ingest server + stream key
+   * Backend assigns a free IVS channel and creates a new stream key
+   */
   async startSession(sessionId: string): Promise<StartSessionResponse> {
-    const response = await axios.post(`${API_URL}/sessions/${sessionId}/start`, {}, {
+    // Use the IVS simple API endpoint for secure channel pool flow
+    const response = await axios.post(`${API_URL}/mentor/sessions/${sessionId}/start`, {}, {
       headers: await getAuthHeaders(),
     });
-    return response.data.data;
+    return response.data;
   }
 
-  async endSession(sessionId: string): Promise<Session> {
-    const response = await axios.post(`${API_URL}/sessions/${sessionId}/end`, {}, {
+  /**
+   * End/Stop a session - Releases the IVS channel back to the pool
+   */
+  async endSession(sessionId: string): Promise<{ ok: boolean }> {
+    const response = await axios.post(`${API_URL}/mentor/sessions/${sessionId}/stop`, {}, {
       headers: await getAuthHeaders(),
     });
-    return response.data.data;
+    return response.data;
   }
 
   async updateSession(sessionId: string, data: Partial<SessionCreateInput>): Promise<Session> {
@@ -130,6 +146,49 @@ class SessionService {
       headers: await getAuthHeaders(),
     });
     return response.data.data;
+  }
+
+  /**
+   * Student: Join a live session to get the playback URL
+   */
+  async joinSession(sessionId: string): Promise<{ playbackUrl: string; sessionId: string; title: string }> {
+    const response = await axios.get(`${API_URL}/student/sessions/${sessionId}/join`, {
+      headers: await getAuthHeaders(),
+    });
+    return response.data;
+  }
+
+  /**
+   * Get session for viewing (with access check)
+   */
+  async getSessionForViewing(sessionId: string): Promise<Session> {
+    const response = await axios.get(`${API_URL}/sessions/${sessionId}/view`, {
+      headers: await getAuthHeaders(),
+    });
+    return response.data.data;
+  }
+
+  /**
+   * Mentor: Get streaming credentials (ingest server + stream key) for a session
+   * This assigns an available channel from the pool and generates a stream key
+   * Use these credentials to configure OBS or other streaming software
+   */
+  async getStreamingCredentials(sessionId: string): Promise<StreamingCredentials> {
+    const response = await axios.get(`${API_URL}/mentor/sessions/${sessionId}/credentials`, {
+      headers: await getAuthHeaders(),
+    });
+    return response.data;
+  }
+
+  /**
+   * Mentor: Release streaming credentials (releases channel back to pool)
+   * Call this when cancelling or when done with the session
+   */
+  async releaseStreamingCredentials(sessionId: string): Promise<{ ok: boolean; message: string }> {
+    const response = await axios.delete(`${API_URL}/mentor/sessions/${sessionId}/credentials`, {
+      headers: await getAuthHeaders(),
+    });
+    return response.data;
   }
 }
 

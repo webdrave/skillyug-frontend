@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Video, Calendar, Clock, Users, AlertCircle, ArrowLeft, PlayCircle } from 'lucide-react';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
@@ -36,6 +37,7 @@ interface SessionData {
     status: string;
     isActive: boolean;
   };
+  playbackUrl?: string; // Added root playbackUrl
   _count?: {
     attendance: number;
   };
@@ -44,17 +46,25 @@ interface SessionData {
 export default function SessionDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: authSession } = useSession();
   const sessionId = params?.sessionId as string;
 
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Get auth token
+  const token = (authSession?.user as any)?.accessToken;
+
   useEffect(() => {
-    if (sessionId) {
+    if (sessionId && token) {
       fetchSession();
+      
+      // Poll for updates every 10 seconds
+      const interval = setInterval(fetchSession, 10000);
+      return () => clearInterval(interval);
     }
-  }, [sessionId]);
+  }, [sessionId, token]);
 
   const fetchSession = async () => {
     try {
@@ -65,6 +75,7 @@ export default function SessionDetailsPage() {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         }
       );
