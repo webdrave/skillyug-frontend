@@ -60,12 +60,14 @@ export const EnrolledSessions: React.FC<EnrolledSessionsProps> = ({
     try {
       setLoading(true);
       const response: any = await apiHelpers.get(
-        `/sessions/my-sessions`,
-        { includeUpcoming: true, limit: limit }
+        `/student/sessions`,
+        {}
       );
 
       if (response.status === 'success' && response.data) {
-        setSessions(response.data || []);
+        // response.data contains { sessions, count }
+        const allSessions = response.data.sessions || response.data || [];
+        setSessions(allSessions.slice(0, limit));
       } else {
         setSessions([]);
       }

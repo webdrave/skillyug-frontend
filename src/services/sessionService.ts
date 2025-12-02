@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getSession } from 'next-auth/react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export interface SessionCreateInput {
   title: string;
@@ -69,11 +69,11 @@ const getAuthHeaders = async () => {
 };
 
 class SessionService {
-  async createSession(data: SessionCreateInput): Promise<Session> {
+  async createSession(data: SessionCreateInput): Promise<{ data: { session: Session; message: string; credentials?: { streamKey?: string; ingestEndpoint?: string; playbackUrl?: string } } }> {
     const response = await axios.post(`${API_URL}/sessions`, data, {
       headers: await getAuthHeaders(),
     });
-    return response.data.data;
+    return response.data;
   }
 
   async getSession(sessionId: string): Promise<Session> {

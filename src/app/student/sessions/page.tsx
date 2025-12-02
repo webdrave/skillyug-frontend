@@ -11,6 +11,34 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Clock, Video, Users, PlayCircle, CalendarClock } from 'lucide-react';
 import { formatDistanceToNow, format, isPast, isFuture } from 'date-fns';
 
+// Helper function to display time based on session status
+function getTimeDisplay(scheduledAt: string, status: string) {
+  const date = new Date(scheduledAt);
+  
+  if (status === 'LIVE') {
+    return (
+      <span className="text-red-600 font-semibold flex items-center gap-1">
+        <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
+        LIVE NOW
+      </span>
+    );
+  }
+  
+  if (isFuture(date)) {
+    return (
+      <span className="text-blue-600">
+        Starts {formatDistanceToNow(date, { addSuffix: true })}
+      </span>
+    );
+  }
+  
+  return (
+    <span className="text-gray-500">
+      {format(date, 'MMM d, yyyy • h:mm a')}
+    </span>
+  );
+}
+
 export default function StudentSessionsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -73,33 +101,6 @@ export default function StudentSessionsPage() {
       default:
         return 'bg-gray-400 text-white';
     }
-  };
-
-  const getTimeDisplay = (scheduledAt: string, status: string) => {
-    const date = new Date(scheduledAt);
-    
-    if (status === 'LIVE') {
-      return (
-        <span className="text-red-600 font-semibold flex items-center gap-1">
-          <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
-          LIVE NOW
-        </span>
-      );
-    }
-    
-    if (isFuture(date)) {
-      return (
-        <span className="text-blue-600">
-          Starts {formatDistanceToNow(date, { addSuffix: true })}
-        </span>
-      );
-    }
-    
-    return (
-      <span className="text-gray-500">
-        {format(date, 'MMM d, yyyy • h:mm a')}
-      </span>
-    );
   };
 
   const liveSessions = sessions.filter(s => s.status === 'LIVE');

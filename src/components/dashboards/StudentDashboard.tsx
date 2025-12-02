@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { ActiveStreamsList } from '../streaming/ActiveStreamsList';
 import { EnrolledSessions } from '../sessions/EnrolledSessions';
 import { EnrolledCourses } from '../courses/EnrolledCourses';
+import { LiveCourseSessions } from '../sessions/LiveCourseSessions';
 
 
 // ## Sidebar Component Definition ##
@@ -109,6 +110,11 @@ const MainContent = () => {
         {/* Content based on profile availability */}
         {profile ? (
           <>
+            {/* Live Classes Section - Prominently at the top */}
+            <div className="mb-8">
+              <LiveCourseSessions limit={6} showTitle={true} />
+            </div>
+
             {/* Learning Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-black/30 backdrop-blur-md border border-blue-800/30 rounded-xl p-6">
@@ -154,11 +160,6 @@ const MainContent = () => {
               </div>
             </div>
 
-            {/* Enrolled Courses Section */}
-            <div className="mb-8">
-              <EnrolledCourses limit={6} showTitle={true} />
-            </div>
-
             {/* Upcoming Sessions Section */}
             <div className="mb-8">
               <EnrolledSessions limit={6} showTitle={true} />
@@ -171,9 +172,9 @@ const MainContent = () => {
           </>
         ) : (
           <>
-            {/* Live Streaming Section for all users */}
+            {/* Live Classes Section for users without profile */}
             <div className="mb-8">
-              <ActiveStreamsList />
+              <LiveCourseSessions limit={6} showTitle={true} />
             </div>
 
             {/* Quick Actions for real users */}
